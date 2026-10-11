@@ -7,10 +7,9 @@ import threading
 fake = type(sys)('magic')
 fake.from_buffer = lambda *a, **k: "image/jpeg"
 fake.from_file = lambda *a, **k: "image/jpeg"
-fake.from_buffer = fake.from_buffer
 sys.modules['magic'] = fake
 
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, render_template_string, jsonify
 from neonize.client import NewClient
 from neonize.types import MessageWithContext
 
@@ -89,7 +88,6 @@ def start_bot():
     global client_obj, pairing_code_global
     no = input("Nomor WA 62xxx: ").strip()
     client_obj = NewClient("session.db")
-
     @client_obj.event
     def on_message(chat, message: MessageWithContext):
         try:
@@ -106,7 +104,6 @@ def start_bot():
                 chat.send_message(triggers[low])
         except Exception as e:
             print(e)
-
     if not client_obj.is_logged_in:
         code = client_obj.pair_phone(no, show_push_notification=True)
         pairing_code_global = code
