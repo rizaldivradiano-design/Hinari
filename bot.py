@@ -2,24 +2,13 @@ import os
 import sys
 import json
 import time
-import random
 import threading
 
-try:
-    import magic
-except Exception:
-    class FakeMagic:
-        def from_buffer(self, b, mime=True):
-            if b[:4] == b'\x89PNG':
-                return "image/png"
-            if b[:3] == b'\xff\xd8\xff':
-                return "image/jpeg"
-            if b[:4] == b'RIFF':
-                return "image/webp"
-            return "image/jpeg"
-        def from_file(self, p, mime=True):
-            return "image/jpeg"
-    sys.modules['magic'] = FakeMagic()
+fake = type(sys)('magic')
+fake.from_buffer = lambda *a, **k: "image/jpeg"
+fake.from_file = lambda *a, **k: "image/jpeg"
+fake.from_buffer = fake.from_buffer
+sys.modules['magic'] = fake
 
 from flask import Flask, render_template_string, request, jsonify
 from neonize.client import NewClient
@@ -68,11 +57,10 @@ h1{margin:0 0 24px 0;font-size:30px}
 async function getKode(){
   let r = await fetch('/api/getcode');
   let d = await r.json();
-  let kode = d.code;
   let box = document.getElementById('kode');
   box.style.display='block';
-  box.innerText = kode;
-  await navigator.clipboard.writeText(kode);
+  box.innerText = d.code;
+  await navigator.clipboard.writeText(d.code);
   let el = document.getElementById('toast');
   el.style.display='block';
   setTimeout(()=>el.style.display='none',2000);
@@ -112,7 +100,7 @@ def start_bot():
                 txt = message.Message.extendedTextMessage.text
             low = txt.lower()
             if low == ".menu":
-                chat.send_message("Halo kak, aku Hinata.menu.donate.s")
+                chat.send_message("Halo kak, aku Hinata")
                 return
             if low in triggers:
                 chat.send_message(triggers[low])
@@ -120,13 +108,9 @@ def start_bot():
             print(e)
 
     if not client_obj.is_logged_in:
-        try:
-            code = client_obj.pair_phone(no, show_push_notification=True)
-            pairing_code_global = code
-            print(f"KODE LU: {code}")
-        except Exception as e:
-            print(f"Pair error: {e}")
-            client_obj.connect()
+        code = client_obj.pair_phone(no, show_push_notification=True)
+        pairing_code_global = code
+        print(f"KODE LU: {code}")
     else:
         pairing_code_global = "SUDAH LOGIN"
         client_obj.connect()
